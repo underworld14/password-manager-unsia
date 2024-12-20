@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { Pressable, Text } from "react-native";
+import { useState } from "react";
+import { View, FlatList, StyleSheet, TextInput, Pressable, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, FlatList, StyleSheet, TextInput } from "react-native";
 import FeatherIcons from "@expo/vector-icons/Feather";
-import { FAB } from "react-native-paper";
+import { FAB, Modal, Portal } from "react-native-paper";
+import AccountFormModal from "@/components/AccountFormModal";
 // import { TextInput } from "react-native-paper";
 
 // Data dummy untuk daftar password
@@ -15,6 +15,12 @@ const dummyPasswords = [
 ];
 
 const PasswordListScreen = () => {
+  const [modalAdd, setModalAdd] = useState(false);
+
+  const showModalAdd = () => setModalAdd(true);
+
+  const hideModalAdd = () => setModalAdd(false);
+
   return (
     <SafeAreaView className="relative flex-1 bg-background">
       <View className="h-[72px] flex items-center justify-center">
@@ -55,7 +61,11 @@ const PasswordListScreen = () => {
         </View>
       </View>
 
-      <FAB icon="plus" style={styles.fab} color="#fff" />
+      <FAB icon="plus" style={styles.fab} color="#fff" onPress={showModalAdd} />
+
+      <Portal>
+        <AccountFormModal visible={modalAdd} onDismiss={hideModalAdd} />
+      </Portal>
     </SafeAreaView>
   );
 };
