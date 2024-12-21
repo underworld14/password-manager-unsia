@@ -10,7 +10,7 @@ Follow these instructions to get a copy of the project up and running on your lo
 
 Make sure you have the following installed:
 
-- [Node.js](https://nodejs.org/) (version 12 or later)
+- [Node.js](https://nodejs.org/) (version 18 or later)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 
 ### Installation
