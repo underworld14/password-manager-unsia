@@ -1,17 +1,30 @@
 import { useSession } from "@/context/authContext";
-import { encryptPassword } from "@/lib/crypto";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { encryptPassword, decryptPassword } from "@/lib/crypto";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSQLiteContext } from "expo-sqlite";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Text, View, TextInput } from "react-native";
-import { FAB, Modal, Button } from "react-native-paper";
+import { Modal, Button } from "react-native-paper";
+import * as Clipboard from "expo-clipboard";
+
+interface AccountFormInitialValues {
+  accountName: string;
+  accountUsername: string;
+  accountPassword: string;
+  id: string;
+}
 
 interface AccountFormModalProps {
   visible: boolean;
   onDismiss: () => void;
+  initialValues?: AccountFormInitialValues | null;
 }
 
-export default function AccountFormModal({ visible, onDismiss }: AccountFormModalProps) {
+export default function AccountFormModal({
+  visible,
+  onDismiss,
+  initialValues,
+}: AccountFormModalProps) {
   const db = useSQLiteContext();
   const queryClient = useQueryClient();
 
@@ -21,6 +34,28 @@ export default function AccountFormModal({ visible, onDismiss }: AccountFormModa
   const [accountName, setAccountName] = useState("");
   const [accountUsername, setAccountUsername] = useState("");
   const [accountPassword, setAccountPassword] = useState("");
+  const [decryptedPassword, setDecryptedPassword] = useState("");
+
+  useEffect(() => {
+    if (initialValues) {
+      setAccountName(initialValues.accountName);
+      setAccountUsername(initialValues.accountUsername);
+      // Decrypt the password if initialValues is provided
+      const decrypted = decryptPassword(
+        initialValues.accountPassword,
+        initialValues.accountUsername
+      );
+      setDecryptedPassword(decrypted);
+      setAccountPassword(decrypted);
+    }
+
+    return () => {
+      setAccountName("");
+      setAccountUsername("");
+      setAccountPassword("");
+      setDecryptedPassword("");
+    };
+  }, [initialValues]);
 
   const addNewAccount = async () => {
     if (!accountName || !accountUsername || !accountPassword || !session) {
@@ -52,6 +87,50 @@ export default function AccountFormModal({ visible, onDismiss }: AccountFormModa
     }
   };
 
+  const updateAccount = async () => {
+    if (!accountName || !accountUsername || !accountPassword || !session) {
+      alert("Please fill all the fields");
+      return;
+    }
+
+    try {
+      const encryptedPassword = encryptPassword(accountPassword, accountUsername);
+
+      await db.runAsync(
+        "UPDATE passwords SET title = ?, username = ?, password = ? WHERE id = ? AND user_id = ?",
+        [accountName, accountUsername, encryptedPassword, initialValues?.id || "", session.id]
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["passwords", session.id] });
+
+      alert("Account updated successfully");
+
+      setAccountName("");
+      setAccountUsername("");
+      setAccountPassword("");
+
+      onDismiss();
+    } catch (error) {
+      alert("An error occurred while updating the account");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    setLoading(true);
+    if (initialValues) {
+      updateAccount();
+    } else {
+      addNewAccount();
+    }
+  };
+
+  const copyToClipboard = async () => {
+    await Clipboard.setStringAsync(decryptedPassword);
+    alert("Password copied to clipboard");
+  };
+
   return (
     <Modal
       visible={visible}
@@ -63,7 +142,9 @@ export default function AccountFormModal({ visible, onDismiss }: AccountFormModa
         borderRadius: 8,
       }}
     >
-      <Text className="text-white text-lg font-bold">Add Account</Text>
+      <Text className="text-white text-lg font-bold">
+        {initialValues ? "Edit Account" : "Add Account"}
+      </Text>
 
       <View className="mt-5 gap-3">
         <View className="bg-[#243647] rounded-lg p-3 flex flex-row items-center">
@@ -103,11 +184,21 @@ export default function AccountFormModal({ visible, onDismiss }: AccountFormModa
       <Button
         mode="contained"
         style={{ marginTop: 24, backgroundColor: "#243647", borderRadius: 8 }}
-        onPress={addNewAccount}
+        onPress={handleSubmit}
         loading={loading}
       >
-        Save
+        {initialValues ? "Update" : "Save"}
       </Button>
+
+      {initialValues && (
+        <Button
+          mode="contained"
+          onPress={copyToClipboard}
+          style={{ marginTop: 8, backgroundColor: "#243647", borderRadius: 8 }}
+        >
+          Copy
+        </Button>
+      )}
     </Modal>
   );
 }

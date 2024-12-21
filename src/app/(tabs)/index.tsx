@@ -13,6 +13,8 @@ const PasswordListScreen = () => {
   const db = useSQLiteContext();
   const { session } = useSession();
 
+  const [view, setView] = useState<Record<string, string> | null>();
+
   const { data } = useQuery({
     queryKey: ["passwords", session?.id],
     queryFn: async () => {
@@ -63,7 +65,12 @@ const PasswordListScreen = () => {
                   </View>
                 </View>
 
-                <Pressable className="px-4 py-2 bg-[#243647] rounded-lg">
+                <Pressable
+                  className="px-4 py-2 bg-[#243647] rounded-lg"
+                  onPress={() => {
+                    setView(item);
+                  }}
+                >
                   <Text className="text-white text-sm font-medium">View</Text>
                 </Pressable>
               </View>
@@ -75,7 +82,23 @@ const PasswordListScreen = () => {
       <FAB icon="plus" style={styles.fab} color="#fff" onPress={showModalAdd} />
 
       <Portal>
-        <AccountFormModal visible={modalAdd} onDismiss={hideModalAdd} />
+        <AccountFormModal
+          visible={modalAdd || !!view}
+          initialValues={
+            view && view.id
+              ? {
+                  id: view?.id?.toString(),
+                  accountName: view?.title || "",
+                  accountUsername: view?.username || "",
+                  accountPassword: view?.password || "",
+                }
+              : null
+          }
+          onDismiss={() => {
+            hideModalAdd();
+            setView(null);
+          }}
+        />
       </Portal>
     </SafeAreaView>
   );
