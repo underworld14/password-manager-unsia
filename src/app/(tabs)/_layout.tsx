@@ -1,15 +1,28 @@
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import React from "react";
-import { Platform } from "react-native";
+import { Platform, Text } from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useSession } from "@/context/authContext";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { session, isLoading } = useSession();
+
+  // You can keep the splash screen open, or render a loading screen like we do here.
+  if (isLoading) {
+    return <Text>Loading...</Text>;
+  }
+
+  if (!session) {
+    // On web, static rendering will stop here as the user is not authenticated
+    // in the headless Node process that the pages are rendered in.
+    return <Redirect href="/sign-in" />;
+  }
 
   return (
     <Tabs

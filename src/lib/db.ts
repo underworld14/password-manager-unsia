@@ -15,6 +15,8 @@ export const initDB = async (db: SQLite.SQLiteDatabase) => {
       username TEXT NOT NULL,
       password TEXT NOT NULL,
       user_id INTEGER NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id)
     );`);
   });

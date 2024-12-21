@@ -1,20 +1,29 @@
+import dayjs from "dayjs";
 import { useState } from "react";
 import { View, FlatList, StyleSheet, TextInput, Pressable, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FeatherIcons from "@expo/vector-icons/Feather";
-import { FAB, Modal, Portal } from "react-native-paper";
+import { FAB, Portal } from "react-native-paper";
 import AccountFormModal from "@/components/AccountFormModal";
-// import { TextInput } from "react-native-paper";
-
-// Data dummy untuk daftar password
-const dummyPasswords = [
-  { id: "1", account: "Email", password: "password123" },
-  { id: "2", account: "Facebook", password: "securepass456" },
-  { id: "3", account: "Twitter", password: "mypassword789" },
-  { id: "4", account: "Instagram", password: "instapass101" },
-];
+import { useSQLiteContext } from "expo-sqlite";
+import { useSession } from "@/context/authContext";
+import { useQuery } from "@tanstack/react-query";
 
 const PasswordListScreen = () => {
+  const db = useSQLiteContext();
+  const { session } = useSession();
+
+  const { data } = useQuery({
+    queryKey: ["passwords", session?.id],
+    queryFn: async () => {
+      const result = await db.getAllAsync<Record<string, string>>(
+        "SELECT * FROM passwords WHERE user_id = ?",
+        [session?.id || ""]
+      );
+      return result;
+    },
+  });
+
   const [modalAdd, setModalAdd] = useState(false);
 
   const showModalAdd = () => setModalAdd(true);
@@ -38,7 +47,7 @@ const PasswordListScreen = () => {
 
         <View className="mt-4">
           <FlatList
-            data={dummyPasswords}
+            data={data}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <View className="py-4 flex flex-row items-center justify-between">
@@ -47,8 +56,10 @@ const PasswordListScreen = () => {
                     <FeatherIcons name="globe" size={20} color="#fff" />
                   </View>
                   <View className="ml-4">
-                    <Text className="text-white font-medium">{item.account}</Text>
-                    <Text className="text-sm text-[#94ADC7]">Last modified: 10/12/21</Text>
+                    <Text className="text-white font-medium">{item.title}</Text>
+                    <Text className="text-sm text-[#94ADC7]">
+                      Last modified: {dayjs(item.updated_at).format("DD MMM YYYY")}
+                    </Text>
                   </View>
                 </View>
 
